@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon Flex Log</title>
+<style>
+  body { font-family: -apple-system, Arial, sans-serif; background:#f2f2f2; margin:0; padding:16px; }
+  h1 { font-size:20px; text-align:center; margin-bottom:4px; }
+  .sub { text-align:center; font-size:12px; color:#555; margin-bottom:6px; }
+  .draftnote { text-align:center; font-size:11px; color:#c0392b; margin-bottom:14px; display:none; }
+  form { background:#fff; border-radius:10px; padding:16px; box-shadow:0 1px 4px rgba(0,0,0,0.15); }
+  fieldset { border:1px solid #ccc; border-radius:8px; margin-bottom:14px; padding:10px; }
+  legend { font-weight:bold; background:#232F3E; color:#fff; padding:4px 10px; border-radius:6px; font-size:13px; }
+  label { display:block; font-size:12px; margin-top:8px; color:#333; }
+  input { width:100%; padding:8px; font-size:16px; margin-top:3px; box-sizing:border-box;
+          border:1px solid #999; border-radius:6px; }
+  .row2 { display:flex; gap:8px; }
+  .row2 > div { flex:1; }
+  button { width:100%; padding:14px; font-size:16px; font-weight:bold; background:#F2A900;
+           border:none; border-radius:8px; margin-top:10px; }
+  #clearBtn { background:#ddd; margin-top:8px; font-weight:normal; font-size:13px; padding:8px; }
+  #status { text-align:center; margin-top:10px; font-size:14px; color:green; display:none; }
+</style>
+</head>
+<body>
+
+<h1>Amazon Flex Log</h1>
+<div class="sub">Deadhead &gt; Load &gt; Deadhead</div>
+<div class="draftnote" id="draftNote">Draft restored from your last unsaved trip.</div>
+
+<!-- Posts straight to your Google Form's response endpoint -->
+<form id="flexForm" target="hidden_iframe" method="POST"
+      action="https://docs.google.com/forms/d/e/1FAIpQLSffoWRsvGbyAMid_vbKePjXzxsBOeXxM2t-8IHyOFCrzMoJ-A/formResponse">
+
+  <label>Date</label>
+  <input type="date" name="entry.12968779" data-key="date">
+
+  <div class="row2">
+    <div><label>Block #</label><input type="text" name="entry.1597802844" data-key="block"></div>
+    <div><label>Block Pay ($)</label><input type="number" step="0.01" name="entry.1690245741" data-key="blockPay"></div>
+  </div>
+
+  <div class="row2">
+    <div><label>Block Time Start</label><input type="time" name="entry.991426177" data-key="blockTimeStart"></div>
+    <div><label>Block Time End</label><input type="time" name="entry.879746560" data-key="blockTimeEnd"></div>
+  </div>
+
+  <fieldset>
+    <legend>1. Deadhead (Home to Work)</legend>
+    <div class="row2">
+      <div><label>Mileage Start</label><input type="number" step="0.1" name="entry.840385059" data-key="dh1MileStart"></div>
+      <div><label>Time Start</label><input type="time" name="entry.1950530696" data-key="dh1TimeStart"></div>
+    </div>
+    <div class="row2">
+      <div><label>Mileage End</label><input type="number" step="0.1" name="entry.1731217943" data-key="dh1MileEnd"></div>
+      <div><label>Time End</label><input type="time" name="entry.92126087" data-key="dh1TimeEnd"></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>2. Load (Paid Route)</legend>
+    <div class="row2">
+      <div><label>Mileage Start</label><input type="number" step="0.1" name="entry.689769641" data-key="loadMileStart"></div>
+      <div><label>Time Start</label><input type="time" name="entry.150964834" data-key="loadTimeStart"></div>
+    </div>
+    <div class="row2">
+      <div><label>Mileage End</label><input type="number" step="0.1" name="entry.1989123816" data-key="loadMileEnd"></div>
+      <div><label>Time End</label><input type="time" name="entry.1522200309" data-key="loadTimeEnd"></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>3. Deadhead (End of Route to Home)</legend>
+    <div class="row2">
+      <div><label>Mileage Start</label><input type="number" step="0.1" name="entry.32544278" data-key="dh2MileStart"></div>
+      <div><label>Time Start</label><input type="time" name="entry.135469227" data-key="dh2TimeStart"></div>
+    </div>
+    <div class="row2">
+      <div><label>Mileage End</label><input type="number" step="0.1" name="entry.2090273973" data-key="dh2MileEnd"></div>
+      <div><label>Time End</label><input type="time" name="entry.1663877555" data-key="dh2TimeEnd"></div>
+    </div>
+  </fieldset>
+
+  <button type="submit">Save Entry</button>
+  <button type="button" id="clearBtn">Clear draft &amp; start over</button>
+  <div id="status">Saved! ✅ Draft cleared.</div>
+</form>
+
+<iframe name="hidden_iframe" style="display:none;" onload="handleSubmitResponse()"></iframe>
+
+<script>
+  var STORAGE_KEY = 'flexLogDraft';
+  var form = document.getElementById('flexForm');
+  var inputs = form.querySelectorAll('input[data-key]');
+  var firstLoad = true;
+
+  function saveDraft() {
+    var draft = {};
+    inputs.forEach(function(i) { draft[i.dataset.key] = i.value; });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+  }
+
+  function loadDraft() {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      var draft = JSON.parse(raw);
+      var hasData = false;
+      inputs.forEach(function(i) {
+        if (draft[i.dataset.key]) { i.value = draft[i.dataset.key]; hasData = true; }
+      });
+      if (hasData) document.getElementById('draftNote').style.display = 'block';
+    } catch(e) {}
+  }
+
+  inputs.forEach(function(i) { i.addEventListener('input', saveDraft); });
+
+  document.getElementById('clearBtn').addEventListener('click', function() {
+    if (confirm('Clear all entered fields and start a fresh trip?')) {
+      localStorage.removeItem(STORAGE_KEY);
+      form.reset();
+      document.getElementById('draftNote').style.display = 'none';
+    }
+  });
+
+  function handleSubmitResponse() {
+    if (firstLoad) { firstLoad = false; return; }
+    localStorage.removeItem(STORAGE_KEY);
+    form.reset();
+    document.getElementById('draftNote').style.display = 'none';
+    document.getElementById('status').style.display = 'block';
+    setTimeout(function(){ document.getElementById('status').style.display = 'none'; }, 3000);
+  }
+
+  loadDraft();
+</script>
+
+</body>
+</html>
