@@ -13,8 +13,9 @@
   fieldset { border:1px solid #ccc; border-radius:8px; margin-bottom:14px; padding:10px; }
   legend { font-weight:bold; background:#232F3E; color:#fff; padding:4px 10px; border-radius:6px; font-size:13px; }
   label { display:block; font-size:12px; margin-top:8px; color:#333; }
-  input { width:100%; padding:8px; font-size:16px; margin-top:3px; box-sizing:border-box;
-          border:1px solid #999; border-radius:6px; }
+  input, textarea { width:100%; padding:8px; font-size:16px; margin-top:3px; box-sizing:border-box;
+          border:1px solid #999; border-radius:6px; font-family:inherit; }
+  textarea { resize:vertical; min-height:70px; }
   .row2 { display:flex; gap:8px; }
   .row2 > div { flex:1; }
   button { width:100%; padding:14px; font-size:16px; font-weight:bold; background:#F2A900;
@@ -44,6 +45,11 @@
   <div class="row2">
     <div><label>Block Time Start</label><input type="time" name="entry.991426177" data-key="blockTimeStart"></div>
     <div><label>Block Time End</label><input type="time" name="entry.879746560" data-key="blockTimeEnd"></div>
+  </div>
+
+  <div class="row2">
+    <div><label>Stops</label><input type="number" step="1" name="entry.1835205350" data-key="stops"></div>
+    <div><label>Pkgs</label><input type="number" step="1" name="entry.1903817418" data-key="pkgs"></div>
   </div>
 
   <fieldset>
@@ -82,6 +88,9 @@
     </div>
   </fieldset>
 
+  <label>Route Notes</label>
+  <textarea name="entry.161982148" data-key="routeNotes" placeholder="Traffic, wrong address, damaged package, etc."></textarea>
+
   <button type="submit">Save Entry</button>
   <button type="button" id="clearBtn">Clear draft &amp; start over</button>
   <div id="status">Saved! ✅ Draft cleared.</div>
@@ -92,7 +101,7 @@
 <script>
   var STORAGE_KEY = 'flexLogDraft';
   var form = document.getElementById('flexForm');
-  var inputs = form.querySelectorAll('input[data-key]');
+  var inputs = form.querySelectorAll('[data-key]');
   var firstLoad = true;
 
   function saveDraft() {
