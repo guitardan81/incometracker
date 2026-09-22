@@ -50,8 +50,6 @@
     color:#48484a;
   }
 
-  /* Uniform styling across ALL field types, overriding iOS/Safari native
-     backgrounds on date & time inputs so everything matches */
   input[type="text"],
   input[type="number"],
   input[type="date"],
@@ -97,6 +95,7 @@
     box-shadow:0 2px 6px rgba(242,169,0,0.4);
   }
   #saveBtn:active { background:#d99400; }
+  #saveBtn:disabled { opacity:0.6; }
 
   #clearBtn {
     background:#f1f1f3;
@@ -193,13 +192,14 @@
   <div id="status">Saved! ✅ Draft cleared.</div>
 </form>
 
-<iframe name="hidden_iframe" style="display:none;" onload="handleSubmitResponse()"></iframe>
+<iframe name="hidden_iframe" style="display:none;" onload="handleIframeLoad()"></iframe>
 
 <script>
   var STORAGE_KEY = 'flexLogDraft';
   var form = document.getElementById('flexForm');
+  var saveBtn = document.getElementById('saveBtn');
   var inputs = form.querySelectorAll('[data-key]');
-  var firstLoad = true;
+  var awaitingSubmit = false; // only true right after the user actually clicks Save
 
   function saveDraft() {
     var draft = {};
@@ -230,12 +230,26 @@
     }
   });
 
-  function handleSubmitResponse() {
-    if (firstLoad) { firstLoad = false; return; }
+  // Mark that a real submission is in flight, and lock the button so a
+  // second tap can't fire a duplicate entry while waiting on the response.
+  form.addEventListener('submit', function() {
+    awaitingSubmit = true;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+  });
+
+  // Only clear/confirm when the iframe load was actually caused by OUR
+  // submission -- ignores any incidental/blank load the iframe fires on
+  // its own when the page first opens.
+  function handleIframeLoad() {
+    if (!awaitingSubmit) return;
+    awaitingSubmit = false;
     localStorage.removeItem(STORAGE_KEY);
     form.reset();
     document.getElementById('draftNote').style.display = 'none';
     document.getElementById('status').style.display = 'block';
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save Entry';
     setTimeout(function(){ document.getElementById('status').style.display = 'none'; }, 3000);
   }
 
